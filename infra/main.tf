@@ -24,46 +24,11 @@ resource "aws_s3_object" "expenses" {
   source = "../data/Vilnius_council_expenses.csv"
 }
 
-# resource "aws_iam_user" "data_lake_user" {
-#   name = "data_lake_user"
-#   path = "/"
-# }
 
-# # AWS Glue Catalog Database
-# resource "aws_glue_catalog_database" "data_lake_db" {
-#   name = "data_lake_database"
-# }
-
-# # AWS Lake Formation Permissions
-# resource "aws_lakeformation_permissions" "data_lake_permissions" {
-#   principal       = aws_iam_user.data_lake_user.id
-#   permissions     = ["ALL"]
-#   permissions_with_grant_option = ["ALL"]
-#   catalog_resource = false
-#   data_location {
-#     arn            = aws_s3_bucket.example.arn
-#     catalog_id     = data.aws_caller_identity.current.account_id
-#   }
-# }
-
-# # AWS Glue Crawler for S3 Data Lake
-# resource "aws_glue_crawler" "s3_crawler" {
-#   name          = "data-lake-crawler"
-#   role          = "your-iam-role-arn-for-glue"
-#   database_name = aws_glue_catalog_database.data_lake_db.name
-
-#   s3_target {
-#     path = aws_s3_bucket.data_lake.bucket
-#   }
-# }
-
-
-variable "users" {
-  default = ["salesuser", "customersuser"]
-}
-
-variable "policies" {
-  default = [
+## part 3 - IAM users
+locals {
+  users = ["salesuser", "customersuser"]
+  policies = [
     "arn:aws:iam::aws:policy/AmazonS3FullAccess",
     "arn:aws:iam::aws:policy/AmazonAthenaFullAccess",
     "arn:aws:iam::aws:policy/CloudWatchLogsReadOnlyAccess",
@@ -72,43 +37,50 @@ variable "policies" {
   ]
 }
 
-resource "aws_iam_user" "users" {
-  for_each = toset(var.users)
-  name     = each.value
+module "iam_salesuser" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-user"
+  name = "salesuser"
+  # set random password and output
+  password_length = 16
+  password_reset_required = false
+  # Optional parameters like 'path', 'force_destroy', etc., can be specified here.
 }
 
-resource "random_password" "passwords" {
-  for_each = toset(var.users)
-  length   = 16
-  special  = true
+module "iam_customersuser" {
+  source  = "terraform-aws-modules/iam/aws//modules/iam-user"
+  name = "customersuser"
+  # set random password and output
+  password_length = 16
+  password_reset_required = false
+  # Optional parameters like 'path', 'force_destroy', etc., can be specified here.
 }
 
-resource "aws_iam_user_login_profile" "profiles" {
-  for_each                = toset(var.users)
-  user                    = each.value
-  pgp_key                 = "keybase:someuser"
-  password_reset_required = true
+# attach policies to iam_saleuser
+resource "aws_iam_user_policy_attachment" "salesuser" {
+  count = length(local.policies)
+  user = module.iam_salesuser.iam_user_name
+  policy_arn = local.policies[count.index]
 }
 
-locals {
-  user_policy_combinations = [
-    for u in var.users : [
-      for p in var.policies : {
-        user = u
-        policy = p
-      }
-    ]
-  ]
-  user_policy_map = { for idx, up in flatten(local.user_policy_combinations) : "${up.user}-${up.policy}" => up }
+# attach policies to iam_customersuser
+resource "aws_iam_user_policy_attachment" "customersuser" {
+  count = length(local.policies)
+  user = module.iam_customersuser.iam_user_name
+  policy_arn = local.policies[count.index]
 }
 
-resource "aws_iam_user_policy_attachment" "policies" {
-  for_each = local.user_policy_map
-  user = each.value.user
-  policy_arn = each.value.policy
+# get iam_customersuser password from module output
+output "customersuser_password" {
+  value = module.iam_customersuser.iam_user_login_profile_password
+  sensitive = true
 }
-  
-# output "user_passwords" {
-#   value = { for u in var.users : u => random_password.passwords[u].result }
-#   sensitive = true
-# }
+
+# get iam_salesuser password from module output
+output "iam_salesuser_password" {
+  value = module.iam_salesuser.iam_user_login_profile_password
+  sensitive = true
+}
+
+# TODO: how to get password and login?
+
+# part 4 
