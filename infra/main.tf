@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "lake_raw" {
-  bucket = "${var.project_name}_lake_raw"
+  bucket = "${var.project_name}-lake-raw"
   acl    = "private"
   server_side_encryption_configuration {
     rule {
