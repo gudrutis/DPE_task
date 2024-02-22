@@ -105,3 +105,18 @@ resource "aws_iam_role_policy_attachment" "lake_crawler_role_power_user" {
   role       = aws_iam_role.lake_crawler_role.name
   policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
 }
+
+## part 5 - example data 
+resource "aws_s3_object" "sales" {
+  bucket = aws_s3_bucket.lake_raw.id
+  key    = "data/sales/sales.csv"
+  acl    = "private"
+  source = "../data/sales.csv"
+}
+
+resource "aws_s3_object" "customers" {
+  bucket = aws_s3_bucket.lake_raw.id
+  key    = "data/customers/customers.csv"
+  acl    = "private"
+  source = "../data/customers.csv"
+}
