@@ -83,6 +83,25 @@ output "iam_salesuser_password" {
 
 }
 
-# TODO: how to get password and login?
+## part 4 - Custom Role for Glue
+resource "aws_iam_role" "lake_crawler_role" {
+  name        = "lake-crawler-role"
+  description = "Allows Glue to call AWS services on your behalf to crawl data in S3"
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "glue.amazonaws.com"
+        }
+        Effect = "Allow"
+      },
+    ]
+  })
+}
 
-# part 4 
+resource "aws_iam_role_policy_attachment" "lake_crawler_role_power_user" {
+  role       = aws_iam_role.lake_crawler_role.name
+  policy_arn = "arn:aws:iam::aws:policy/PowerUserAccess"
+}
