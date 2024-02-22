@@ -71,15 +71,13 @@ resource "aws_iam_user_policy_attachment" "customersuser" {
 
 # get iam_customersuser password from module output
 output "customersuser_password" {
-  description = "The password for the customersuser"
   value = "Password for `customersuser`: ${module.iam_customersuser.iam_user_login_profile_password}"
   sensitive = true
 }
 
 # get iam_salesuser password from module output
 output "iam_salesuser_password" {
-  description = "Password for `salesuser`: ${module.iam_salesuser.iam_user_login_profile_password}"
-  value = module.iam_salesuser.iam_user_login_profile_password
+  value = "Password for `salesuser`: ${module.iam_salesuser.iam_user_login_profile_password}"
   sensitive = true
   # can format this output to be more user friendly
 
