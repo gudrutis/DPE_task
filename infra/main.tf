@@ -80,7 +80,6 @@ output "iam_salesuser_password" {
   value = "Password for `salesuser`: ${module.iam_salesuser.iam_user_login_profile_password}"
   sensitive = true
   # can format this output to be more user friendly
-
 }
 
 ## part 4 - Custom Role for Glue
@@ -120,3 +119,53 @@ resource "aws_s3_object" "customers" {
   acl    = "private"
   source = "../data/customers.csv"
 }
+
+## part 6 - data lake configuration
+
+# resource "aws_iam_role" "lake_admin_role" {
+#   name = "lake-admin-role"
+#   assume_role_policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [
+#       {
+#         Action = "sts:AssumeRole"
+#         Effect = "Allow"
+#         Principal = {
+#           Service = "lakeformation.amazonaws.com"
+#         }
+#       }
+#     ]
+#   })
+# }
+
+
+
+# attach aws_iam_user_policy_attachment to iam_saleuser
+# resource "aws_iam_user_policy_attachment" "salesuser_2" {
+#   user = module.iam_salesuser.iam_user_name
+#   policy_arn = local.policies[count.index]
+# }
+
+# resource "aws_lakeformation_resource" "lake_raw_resource" {
+#   role_arn = aws_iam_role.lake_crawler_role.arn
+#   arn  = aws_s3_bucket.lake_raw.arn
+# }
+
+# resource "aws_lakeformation_data_lake_settings" "default" {
+#   admins = [module.iam_salesuser.iam_user_arn]
+# }
+
+# resource "aws_lakeformation_permissions" "salesuser_admin_permissions" {
+#   principal       = module.iam_salesuser.iam_user_arn
+#   permissions     = ["ALL"]
+#   permissions_with_grant_option = ["ALL"]
+#   data_location {
+#     arn = aws_s3_bucket.lake_raw.arn
+#   }
+# }
+
+# # Optionally, set up a database using aws_s3_bucket.lake_raw
+# resource "aws_glue_catalog_database" "lake_database" {
+#   name = "my_lake_database"
+#   # location_uri = "s3://${aws_s3_bucket.lake_raw.bucket}/database/"
+# }
